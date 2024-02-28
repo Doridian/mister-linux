@@ -1,0 +1,5 @@
+::sysinit:/etc/init.d/rc
+tty1:2345:respawn:/sbin/getty 0 tty1
+tty2:2345:respawn:/sbin/getty 0 tty2
+::restart:/sbin/init
+::ctrlaltdel:/sbin/reboot

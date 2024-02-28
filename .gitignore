@@ -1,0 +1,9 @@
+dist
+src
+stamp
+out
+*.img
+revisions
+*.iso
+*.vhd
+
