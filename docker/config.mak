@@ -7,7 +7,7 @@
 # There is no default TARGET; you must select one here or on the make
 # command line. Some examples:
 
-TARGET = i486-linux-musl
+TARGET = m68k-linux-musl
 # TARGET = x86_64-linux-musl
 # TARGET = arm-linux-musleabi
 # TARGET = arm-linux-musleabihf
@@ -68,7 +68,7 @@ OUTPUT = /opt/musl-cross
 # Options you can add for faster/simpler build at the expense of features:
 
 # COMMON_CONFIG += --disable-nls
-GCC_CONFIG += --with-cpu=i486 --with-tune=i486 --with-arch=i486
+GCC_CONFIG += --with-cpu=m68040 --with-arch=m68k
 # GCC_CONFIG += --disable-libquadmath --disable-decimal-float
 # GCC_CONFIG += --disable-libitm
 # GCC_CONFIG += --disable-fixed-point

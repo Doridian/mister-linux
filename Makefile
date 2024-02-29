@@ -1,9 +1,6 @@
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 INITRAMFS_BASE=$(ROOT_DIR)/out/initramfs
 
-UBUNTU_SYSLINUX_ORIG=http://archive.ubuntu.com/ubuntu/pool/main/s/syslinux/syslinux_6.04~git20190206.bf6db5b4+dfsg1.orig.tar.xz
-UBUNTU_SYSLINUX_PKG=http://archive.ubuntu.com/ubuntu/pool/main/s/syslinux/syslinux_6.04~git20190206.bf6db5b4+dfsg1-3ubuntu1.debian.tar.xz
-
 LINUX_VERSION=6.7.5
 LINUX_DIR=linux-$(LINUX_VERSION)
 LINUX_TARBALL=$(LINUX_DIR).tar.xz
@@ -42,56 +39,34 @@ stamp/fetch-busybox: stamp/download-busybox
 	cd src && tar -xvf ../dist/$(BUSYBOX_TARBALL)
 	touch stamp/fetch-busybox
 
-stamp/download-syslinux:
-	-mkdir -p dist src stamp
-	cd dist && wget $(UBUNTU_SYSLINUX_ORIG) -O syslinux_orig.tar.xz
-	cd dist && wget $(UBUNTU_SYSLINUX_PKG) -O syslinux_pkg.tar.xz
-	touch stamp/download-syslinux		
-
-stamp/fetch-syslinux: stamp/download-syslinux
-	-mkdir -p dist src stamp
-	cd src && tar -xvf ../dist/syslinux_orig.tar.xz
-	cd src && mv syslinux-6.04~git20190206.bf6db5b4 syslinux
-	cd src/syslinux && tar -xvf ../../dist/syslinux_pkg.tar.xz
-	cd src/syslinux && QUILT_PATCHES=debian/patches quilt push -a
-	cd src/syslinux && patch -p1 < ../../patches/0030-fix-e88.patch
-	touch stamp/fetch-syslinux		
-
 kernelmenuconfig: stamp/fetch-kernel
 	cp config/kernel.config src/$(LINUX_DIR)/.config
-	cd src/$(LINUX_DIR) && make ARCH=x86 CROSS_COMPILE=i486-linux-musl- menuconfig
+	cd src/$(LINUX_DIR) && make ARCH=m68k CROSS_COMPILE=m68k-linux-musl- menuconfig
 	cp src/$(LINUX_DIR)/.config config/kernel.config
 
 busyboxmenuconfig: stamp/fetch-busybox
 	cp config/busybox.config src/$(BUSYBOX_DIR)/.config
-	cd src/$(BUSYBOX_DIR) && make ARCH=x86 CROSS_COMPILE=i486-linux-musl- menuconfig
+	cd src/$(BUSYBOX_DIR) && make ARCH=m68k CROSS_COMPILE=m68k-linux-musl- menuconfig
 	cp src/$(BUSYBOX_DIR)/.config config/busybox.config
 
-build-syslinux: stamp/fetch-syslinux
-	mkdir -p out/cdroot/isolinux
-	cd src/syslinux && make bios PYTHON=python3 ARCH=x86 CROSS_COMPILE=i486-linux-musl- CC=i486-linux-musl-gcc LD=i486-linux-musl-ld OBJCOPY=i486-linux-musl-objcopy LD_LIBRARY_PATH=/opt/musl-cross/i486-linux-musl
-	cd src/syslinux && make bios install PYTHON=python3 ARCH=x86 CROSS_COMPILE=i486-linux-musl- CC=i486-linux-musl-gcc LD=i486-linux-musl-ld OBJCOPY=i486-linux-musl-objcopy INSTALLROOT=`pwd`/../../out/isolinux
-	cp out/isolinux/usr/share/syslinux/isolinux.bin out/cdroot/isolinux/
-	cp out/isolinux/usr/share/syslinux/ldlinux.c32 out/cdroot/isolinux/
-	cp config/isolinux.cfg out/cdroot/isolinux.cfg
-
-download-all: stamp/download-kernel stamp/download-busybox stamp/download-syslinux
+download-all: stamp/download-kernel stamp/download-busybox
 	echo OK
 
 build-kernel: stamp/fetch-kernel
 	-mkdir out
 	-mkdir -p out/initramfs
 	cp config/kernel.config src/$(LINUX_DIR)/.config
-	cd src/$(LINUX_DIR) && $(MAKE) -j4 ARCH=x86 CROSS_COMPILE=i486-linux-musl-
-	cp src/$(LINUX_DIR)/arch/x86/boot/bzImage out/cdroot/bzImage
-	cd src/$(LINUX_DIR) && INSTALL_MOD_PATH=../../out/initramfs $(MAKE) ARCH=x86 CROSS_COMPILE=i486-linux-musl- modules_install
+	cd src/$(LINUX_DIR) && $(MAKE) -j4 ARCH=m68k CROSS_COMPILE=m68k-linux-musl-
+	cp src/$(LINUX_DIR)/vmlinux.gz out/cdroot/vmlinux.gz
+	cp src/$(LINUX_DIR)/vmlinux.gz /repo-src/vmlinux.gz
+	cd src/$(LINUX_DIR) && INSTALL_MOD_PATH=../../out/initramfs $(MAKE) ARCH=m68k CROSS_COMPILE=m68k-linux-musl- modules_install
 	depmod -b out/initramfs $(LINUX_VERSION)
 
 build-busybox: stamp/fetch-busybox
 	-mkdir -p out/rootfsinitramfs
 	cp config/busybox.config src/$(BUSYBOX_DIR)/.config
-	cd src/$(BUSYBOX_DIR) && $(MAKE) ARCH=x86 CROSS_COMPILE=i486-linux-musl-
-	cd src/$(BUSYBOX_DIR) && $(MAKE) ARCH=x86 CROSS_COMPILE=i486-linux-musl- install
+	cd src/$(BUSYBOX_DIR) && $(MAKE) ARCH=m68k CROSS_COMPILE=m68k-linux-musl-
+	cd src/$(BUSYBOX_DIR) && $(MAKE) ARCH=m68k CROSS_COMPILE=m68k-linux-musl- install
 	cp -rv src/$(BUSYBOX_DIR)/_install/* out/initramfs
 
 build-initramfs: build-busybox
@@ -139,9 +114,9 @@ build-initramfs: build-busybox
 	cp etc/inittab out/initramfs/etc/inittab
 	chmod 755 out/initramfs/etc/inittab
 
-	cp /opt/musl-cross/i486-linux-musl/lib/libc.so out/initramfs/lib/libc.so
-	ln -sf libc.so out/initramfs/lib/ld-musl-i486.so.1
-	ln -sf libc.so out/initramfs/lib/ld-musl-i486.so
+	cp /opt/musl-cross/m68k-linux-musl/lib/libc.so out/initramfs/lib/libc.so
+	ln -sf libc.so out/initramfs/lib/ld-musl-m68k.so.1
+	ln -sf libc.so out/initramfs/lib/ld-musl-m68k.so
 
 	cp etc/passwd out/initramfs/etc/passwd
 	chmod 644 out/initramfs/etc/passwd
@@ -178,19 +153,19 @@ build-initramfs: build-busybox
 	cd out/initramfs && \
 	find . | cpio -o -H newc | gzip > $(ROOT_DIR)/out/cdroot/initrd.gz
 
-build-cdrom: build-kernel build-initramfs build-syslinux
+	cp out/cdroot/initrd.gz /repo-src/initrd.gz
+
+build-cdrom: build-kernel build-initramfs
 	#-rm -f out/cdroot/stage3.tar.xz
 	#wget $(GENTOO_STAGE3_URL) -O out/cdroot/stage3.tar.xz
-	rm -f out/cdroot/isolinux.tar.gz
-	tar -cvzf out/cdroot/isolinux.tar.gz out/isolinux
 	rm -f out/cdroot/modules.tar.gz
 	tar -cvzf out/cdroot/modules.tar.gz -C out/initramfs ./lib/modules
 	mkisofs -o ./mister_linux.iso \
-		-b isolinux/isolinux.bin \
-		-c isolinux/boot.cat \
-		-no-emul-boot -boot-load-size 4 -boot-info-table \
 		./out/cdroot
-	#-c out/isolinux/usr/share/syslinux/boot.cat \
+	#	-b isolinux/isolinux.bin \
+	#	-c isolinux/boot.cat \
+	#	-no-emul-boot -boot-load-size 4 -boot-info-table \
+	#	./out/cdroot
 
 clean:
 	echo "Making a fresh build ..."

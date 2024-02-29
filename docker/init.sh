@@ -5,7 +5,7 @@ set -x
 
 if [ -d /repo-src/.git ];
 then
-    rsync -a /repo-src/ /src/mister-linux/ --exclude=out --exclude=src --exclude=src --exclude=stamp
+    rsync -a /repo-src/ /src/mister-linux/ --exclude=out --exclude=src --exclude=src --exclude=stamp '--exclude=*.iso' '--exclude=*.vhd' '--exclude=*.img'
 else
     git clone https://github.com/Doridian/mister-linux.git /src/mister-linux
 fi
