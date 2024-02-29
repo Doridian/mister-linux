@@ -6,4 +6,5 @@ out
 revisions
 *.iso
 *.vhd
+.DS_Store
 
